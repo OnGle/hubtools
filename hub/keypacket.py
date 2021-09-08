@@ -32,8 +32,8 @@ def _pad(s):
     return os.urandom(padding_len) + s + struct.pack("!H", len(s))
 
 def _unpad(padded):
-    len, = struct.unpack("!H", padded[-2:])
-    return padded[-(2 + len) :-2]
+    length, = struct.unpack("!H", padded[-2:])
+    return padded[-(2 + length) :-2]
 
 def _repeat(f, input, count):
     for x in range(count):
@@ -75,7 +75,7 @@ def _parse(packet):
         packet = base64.b64decode(packet)
         version, khr, kcr = struct.unpack("!BHH", packet[:5])
     except (TypeError, struct.error) as e:
-        raise Error("can't parse key packet: " + str(e))
+        raise Error("can't parse key packet: " + str(e)) from e
 
     minimum_len = (5 + FINGERPRINT_LEN + 16)
     if len(packet) < minimum_len:
@@ -90,7 +90,7 @@ def _parse(packet):
     return khr, kcr, fingerprint, ciphertext
 
 def parse(packet, passphrase):
-    khr, kcr, fingerprint, ciphertext = _parse(packet)
+    khr, kcr, _, ciphertext = _parse(packet)
 
     if not passphrase:
         hash_repeats = cipher_repeats = 1

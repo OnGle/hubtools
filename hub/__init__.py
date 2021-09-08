@@ -9,15 +9,15 @@
 # Free Software Foundation; either version 3 of the License, or (at your
 # option) any later version.
 #
-from .appliances import Appliances
-from .servers import Servers
-from .backups import Backups
-
 import time
 
 from pycurl_wrapper import API
 
-class Hub(object):
+from .appliances import Appliances
+from .servers import Servers
+from .backups import Backups
+
+class Hub:
     Error = API.Error
 
     """Top-level object to access the TurnKey Hub API"""
@@ -29,8 +29,9 @@ class Hub(object):
             headers['apikey'] = apikey
 
         _api = API(timeout=timeout, verbose=verbose)
-        def api(method, uri, attrs={}):
-            return _api.request(method, self.API_URL + uri, attrs, headers)
+        def api(method, uri, attrs=None):
+            return _api.request(method, self.API_URL + uri,
+                    {} if attrs is None else attrs, headers)
 
         self.appliances = Appliances(api)
         self.servers = Servers(api)
@@ -54,7 +55,10 @@ class Spawner:
     class Stopped(Error):
         pass
 
-    def __init__(self, apikey, wait_status_first=WAIT_STATUS_FIRST, wait_status=WAIT_STATUS, wait_retry=WAIT_RETRY, api_retries=API_RETRIES, api_timeout=API_TIMEOUT):
+    def __init__(
+            self, apikey, wait_status_first=WAIT_STATUS_FIRST,
+            wait_status=WAIT_STATUS, wait_retry=WAIT_RETRY,
+            api_retries=API_RETRIES, api_timeout=API_TIMEOUT):
 
         self.hub = Hub(apikey, timeout=api_timeout)
 
@@ -65,7 +69,7 @@ class Spawner:
         self.api_retries = api_retries
 
     def _retry(self, callable, *args, **kwargs):
-        for i in range(self.api_retries + 1):
+        for _ in range(self.api_retries + 1):
             try:
                 return callable(*args, **kwargs)
             except self.hub.Error as e:
@@ -117,7 +121,7 @@ class Spawner:
                     log("launch stopped, destroying pending instances...")
 
             if stopped:
-                servers = [ server for server in get_pending_servers() ]
+                servers = list(get_pending_servers())
 
                 for server in servers:
                     if server.status == 'running':
@@ -134,8 +138,7 @@ class Spawner:
 
                 if not pending_ids or not servers:
                     raise self.Stopped
-                else:
-                    time.sleep(self.wait_status)
+                time.sleep(self.wait_status)
 
                 continue
 
@@ -147,7 +150,9 @@ class Spawner:
                 except Exception as e:
 
                     if pending_ids:
-                        log("failed to launch instance, waiting for %d pending instances" % len(pending_ids))
+                        log(
+                            "failed to launch instance, waiting for"
+                            f"{len(pending_ids)} pending instances")
                     else:
                         log("failed to launch instance")
 
@@ -160,7 +165,8 @@ class Spawner:
             if (time.time() - time_start) >= wait_status:
                 pending_servers = get_pending_servers()
 
-                missing_ids = pending_ids - yielded_ids - set([ server.instanceid for server in pending_servers ])
+                missing_ids = pending_ids - yielded_ids - {
+                        server.instanceid for server in pending_servers }
                 for missing_id in missing_ids:
                     pending_ids.remove(missing_id)
 
@@ -187,7 +193,7 @@ class Spawner:
         """destroy addresses. An address can be an IP or an instance-id.
         Return a list of destroyed (ipaddress, instanceid) tuples"""
         if not addresses:
-            return
+            return None
 
         retry = self._retry
 

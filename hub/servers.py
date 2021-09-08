@@ -64,7 +64,7 @@ class Server(AttrDict):
 
         self.boot_status = boot_status
 
-class Servers(object):
+class Servers:
     def __init__(self, api):
         self.api = api
 
@@ -109,4 +109,3 @@ class Servers(object):
         r = self.api('POST', 'amazon/launch/%s/' % name, attrs)
 
         return Server(self.api, r)
-

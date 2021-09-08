@@ -34,8 +34,7 @@ def _fmt_size(bytes):
         return "0.01"
     if bytes > (1024 * 1024 * 1000 * 99.99):
         return "%d" % (bytes / (1024 * 1024))
-    else:
-        return "%-.2f" % (bytes / (1024 * 1024.0))
+    return "%-.2f" % (bytes / (1024 * 1024.0))
 
 def _fmt_status(status, boot_status):
     if status == "running" and not boot_status == "booted":
@@ -76,4 +75,3 @@ def fmt_appliance(appliance):
         (appliance.name,
          appliance.version.split('-')[0],
          "root_pass %s" % " ".join(appliance.preseeds))
-
